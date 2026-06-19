@@ -1,0 +1,25 @@
+# Environment files (contain secrets)
+.env
+.env.local
+.env.production
+.env.prod
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Docker
+docker-data/
+postgres-data/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*

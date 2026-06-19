@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  # ===========================================================================
+  # Evolution API - WhatsApp REST API
+  # ===========================================================================
+  api:
+    container_name: evolution_api
+    image: evoapicloud/evolution-api:latest
+    restart: always
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+    env_file:
+      - .env
+    networks:
+      - evolution-net
+    expose:
+      - "8080"
+
+  # ===========================================================================
+  # Evolution Manager - Web UI for managing instances
+  # ===========================================================================
+  frontend:
+    container_name: evolution_frontend
+    image: evoapicloud/evolution-manager:latest
+    restart: always
+    ports:
+      - "127.0.0.1:3000:80"
+    networks:
+      - evolution-net
+
+  # ===========================================================================
+  # PostgreSQL - Database
+  # ===========================================================================
+  postgres:
+    container_name: evolution_postgres
+    image: postgres:15
+    restart: always
+    env_file:
+      - .env
+    command:
+      - postgres
+      - -c
+      - max_connections=1000
+      - -c
+      - listen_addresses=*
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - evolution-net
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # Redis - Cache
+  # ===========================================================================
+  redis:
+    container_name: evolution_redis
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --port 6379 --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - evolution-net
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  evolution_instances:
+  postgres_data:
+  redis_data:
+
+networks:
+  evolution-net:
+    name: evolution-net
+    driver: bridge
