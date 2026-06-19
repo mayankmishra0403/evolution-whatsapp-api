@@ -68,6 +68,27 @@ services:
       retries: 5
 
   # ===========================================================================
+  # Dashboard - Custom management UI
+  # ===========================================================================
+  dashboard:
+    container_name: evolution_dashboard
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      EVOLUTION_API_URL: http://api:8080
+      EVOLUTION_API_KEY: ${AUTHENTICATION_API_KEY}
+      DASHBOARD_PIN: ${DASHBOARD_PIN:-2006}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-session-secret}
+    networks:
+      - evolution-net
+
+  # ===========================================================================
   # Redis - Cache
   # ===========================================================================
   redis:

@@ -23,3 +23,8 @@ logs/
 .idea/
 .vscode/
 *.sublime-*
+
+# Node
+node_modules/
+dashboard/node_modules/
+dashboard/package-lock.json

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evolution Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f172a; color: #e2e8f0; min-height: 100vh;
+}
+.navbar {
+  background: #1e293b; padding: 16px 24px; display: flex; align-items: center;
+  justify-content: space-between; border-bottom: 1px solid #334155;
+}
+.navbar h2 { font-size: 18px; }
+.navbar h2 span { color: #3b82f6; }
+.navbar .badge { font-size: 12px; color: #94a3b8; margin-left: 8px; }
+.navbar button {
+  background: none; border: 1px solid #475569; color: #94a3b8; padding: 6px 14px;
+  border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.navbar button:hover { background: #334155; color: #e2e8f0; }
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+.card {
+  background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155;
+}
+.card h3 { font-size: 15px; margin-bottom: 16px; color: #cbd5e1; display: flex; align-items: center; gap: 8px; }
+.input-group { margin-bottom: 12px; }
+.input-group label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+.input-group input, .input-group select {
+  width: 100%; padding: 10px 12px; border: 1px solid #334155; border-radius: 8px;
+  background: #0f172a; color: #e2e8f0; font-size: 14px; outline: none;
+}
+.input-group input:focus { border-color: #3b82f6; }
+.btn {
+  padding: 10px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: 0.15s;
+}
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-primary:hover { background: #2563eb; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-outline { background: none; border: 1px solid #475569; color: #94a3b8; }
+.btn-outline:hover { background: #334155; color: #e2e8f0; }
+.btn-success { background: #16a34a; color: #fff; }
+.btn-success:hover { background: #15803d; }
+.message { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; display: none; }
+.message.success { display: block; background: #052e16; border: 1px solid #166534; color: #86efac; }
+.message.error { display: block; background: #450a0a; border: 1px solid #991b1b; color: #fca5a5; }
+#instancesList { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.instance-card {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.instance-card .info { flex: 1; }
+.instance-card .name { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+.instance-card .meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.status-open { background: #22c55e; }
+.status-connecting { background: #eab308; }
+.status-close { background: #64748b; }
+.pairing-code-box {
+  background: #0f172a; border: 2px dashed #3b82f6; border-radius: 10px;
+  padding: 20px; text-align: center; margin-top: 12px; display: none;
+}
+.pairing-code-box .code {
+  font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #60a5fa; margin: 10px 0;
+}
+.pairing-code-box .hint { font-size: 12px; color: #94a3b8; }
+.empty-state { text-align: center; padding: 30px; color: #64748b; font-size: 13px; }
+.code-div { display: flex; gap: 8px; align-items: center; }
+.code-div code {
+  flex: 1; background: #0f172a; padding: 8px 12px; border-radius: 6px;
+  font-size: 12px; color: #94a3b8; word-break: break-all;
+}
+.copy-btn { background: none; border: 1px solid #475569; color: #94a3b8; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.copy-btn:hover { background: #334155; color: #e2e8f0; }
+</style>
+</head>
+<body>
+<div class="navbar">
+  <div>
+    <h2>⚡ <span>Evolution</span> Dashboard</h2>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="apiVersion" class="badge"></span>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="grid">
+    <!-- Left Column -->
+    <div>
+      <!-- Create Instance -->
+      <div class="card" style="margin-bottom:20px">
+        <h3>➕ New Instance</h3>
+        <div class="input-group">
+          <label>Instance Name</label>
+          <input type="text" id="newInstanceName" placeholder="e.g., my-whatsapp">
+        </div>
+        <button class="btn btn-primary" onclick="createInstance()">Create Instance</button>
+        <div id="createMsg" class="message"></div>
+      </div>
+
+      <!-- Connect via Pairing Code -->
+      <div class="card">
+        <h3>📱 Connect via Pairing Code</h3>
+        <p style="font-size:12px;color:#64748b;margin-bottom:12px">
+          Enter phone number to get a pairing code. Open WhatsApp on your phone → Linked Devices → Link a Device → tap "Link with phone number" and enter the code.
+        </p>
+        <div class="input-group">
+          <label>Instance Name</label>
+          <select id="connectInstance"></select>
+        </div>
+        <div class="input-group">
+          <label>Phone Number (with country code, no +)</label>
+          <input type="text" id="phoneNumber" placeholder="e.g., 919876543210">
+        </div>
+        <button class="btn btn-success" onclick="connectInstance()">Get Pairing Code</button>
+        <div id="connectMsg" class="message"></div>
+        <div id="pairingCodeBox" class="pairing-code-box">
+          <div style="font-size:12px;color:#94a3b8">Pairing Code</div>
+          <div class="code" id="pairingCode">ABC-123</div>
+          <div class="hint">Enter this code on your phone's WhatsApp</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+      <!-- Settings -->
+      <div class="card" style="margin-bottom:20px">
+        <h3>⚙️ API Settings</h3>
+        <div class="code-div" style="margin-bottom:8px">
+          <code id="settingsApiUrl">-</code>
+          <button class="copy-btn" onclick="copyText('settingsApiUrl')">Copy</button>
+        </div>
+        <div class="code-div">
+          <code id="settingsApiKey">-</code>
+          <button class="copy-btn" onclick="copyText('settingsApiKey')">Copy</button>
+        </div>
+        <div style="margin-top:8px">
+          <span style="font-size:11px;color:#64748b">
+            <span id="settingsHasKey" style="color:#22c55e">✓ API Key configured</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Instances -->
+      <div class="card">
+        <h3>📦 Instances <span id="instanceCount" style="font-size:12px;color:#64748b">(0)</span></h3>
+        <div id="instancesList">
+          <div class="empty-state">No instances yet. Create one to get started.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send Message (full width) -->
+  <div class="card" style="margin-top:20px">
+    <h3>✉️ Send Test Message</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:12px;align-items:end">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Instance</label>
+        <select id="sendInstance"></select>
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label>Number</label>
+        <input type="text" id="sendNumber" placeholder="5511999999999">
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label>Message</label>
+        <input type="text" id="sendText" placeholder="Hello from Evolution API!">
+      </div>
+      <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+    <div id="sendMsg" class="message"></div>
+  </div>
+</div>
+
+<script>
+const EVOLUTION_KEY = "";
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  return res.json();
+}
+
+async function loadSettings() {
+  const s = await api('/api/settings');
+  document.getElementById('settingsApiUrl').textContent = s.apiUrl;
+  document.getElementById('settingsApiKey').textContent = s.apiKey;
+  document.getElementById('settingsHasKey').innerHTML = s.hasKey
+    ? '✓ API Key configured'
+    : '✗ No API Key set';
+}
+
+async function loadStatus() {
+  const s = await api('/api/status');
+  document.getElementById('apiVersion').textContent = s.version ? `v${s.version}` : 'Offline';
+}
+
+async function loadInstances() {
+  const instances = await api('/api/instances');
+  const list = document.getElementById('instancesList');
+  document.getElementById('instanceCount').textContent = `(${instances.length})`;
+
+  if (!instances.length) {
+    list.innerHTML = '<div class="empty-state">No instances yet. Create one to get started.</div>';
+    return;
+  }
+
+  list.innerHTML = instances.map(inst => {
+    const name = inst.instance?.instanceName || inst.name || 'unknown';
+    const state = inst.instance?.state || inst.state || 'close';
+    const statusClass = state === 'open' ? 'status-open' : state === 'connecting' ? 'status-connecting' : 'status-close';
+    return `
+      <div class="instance-card">
+        <div class="info">
+          <div class="name"><span class="status-dot ${statusClass}"></span>${name}</div>
+          <div class="meta">Status: ${state}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-outline" onclick="refreshInstance('${name}')">Refresh</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteInstance('${name}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Update selects
+  const opts = instances.map(i => {
+    const name = i.instance?.instanceName || i.name || 'unknown';
+    return `<option value="${name}">${name}</option>`;
+  }).join('');
+  document.getElementById('connectInstance').innerHTML = opts;
+  document.getElementById('sendInstance').innerHTML = opts;
+}
+
+async function createInstance() {
+  const name = document.getElementById('newInstanceName').value.trim();
+  if (!name) return;
+  const msg = document.getElementById('createMsg');
+  msg.className = 'message';
+  msg.style.display = 'none';
+
+  const r = await api('/api/instance/create', {
+    method: 'POST',
+    body: JSON.stringify({ instanceName: name }),
+  });
+  if (r.success) {
+    msg.className = 'message success';
+    msg.textContent = `Instance "${name}" created!`;
+    msg.style.display = 'block';
+    document.getElementById('newInstanceName').value = '';
+    loadInstances();
+  } else {
+    msg.className = 'message error';
+    msg.textContent = r.error || 'Failed to create instance';
+    msg.style.display = 'block';
+  }
+}
+
+async function connectInstance() {
+  const instanceName = document.getElementById('connectInstance').value;
+  const number = document.getElementById('phoneNumber').value.trim();
+  if (!instanceName || !number) return;
+  const msg = document.getElementById('connectMsg');
+  const box = document.getElementById('pairingCodeBox');
+  msg.className = 'message';
+  msg.style.display = 'none';
+  box.style.display = 'none';
+
+  const r = await api('/api/instance/connect', {
+    method: 'POST',
+    body: JSON.stringify({ instanceName, number }),
+  });
+
+  if (r.pairingCode) {
+    document.getElementById('pairingCode').textContent = r.pairingCode;
+    box.style.display = 'block';
+    msg.className = 'message success';
+    msg.textContent = 'Pairing code generated! Enter it on your phone.';
+    msg.style.display = 'block';
+  } else if (r.code && !r.pairingCode) {
+    msg.className = 'message error';
+    msg.textContent = 'Pairing code not available. QR code was generated instead.';
+    msg.style.display = 'block';
+  } else if (r.error) {
+    msg.className = 'message error';
+    msg.textContent = r.error;
+    msg.style.display = 'block';
+  } else {
+    msg.className = 'message error';
+    msg.textContent = 'Failed to get pairing code. Check if the instance exists and is in "close" state.';
+    msg.style.display = 'block';
+  }
+  loadInstances();
+}
+
+async function refreshInstance(name) {
+  const r = await api(`/api/instance/state/${name}`);
+  loadInstances();
+}
+
+async function deleteInstance(name) {
+  if (!confirm(`Delete instance "${name}"?`)) return;
+  await api(`/api/instance/delete/${name}`, { method: 'DELETE' });
+  loadInstances();
+}
+
+async function sendMessage() {
+  const instanceName = document.getElementById('sendInstance').value;
+  const number = document.getElementById('sendNumber').value.trim();
+  const text = document.getElementById('sendText').value.trim();
+  if (!instanceName || !number || !text) return;
+  const msg = document.getElementById('sendMsg');
+  msg.className = 'message';
+  msg.style.display = 'none';
+
+  const r = await api('/api/message/send', {
+    method: 'POST',
+    body: JSON.stringify({ instanceName, number, text }),
+  });
+  if (r.status === 'SUCCESS' || r.key?.id) {
+    msg.className = 'message success';
+    msg.textContent = 'Message sent!';
+  } else {
+    msg.className = 'message error';
+    msg.textContent = r.error || 'Failed to send';
+  }
+  msg.style.display = 'block';
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text);
+}
+
+document.getElementById('logoutBtn').onclick = async () => {
+  await api('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+};
+
+loadSettings();
+loadStatus();
+loadInstances();
+setInterval(loadInstances, 5000);
+</script>
+</body>
+</html>
