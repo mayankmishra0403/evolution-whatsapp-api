@@ -88,12 +88,15 @@ app.post("/api/instance/create", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/instance/connect", requireAuth, async (req, res) => {
+app.get("/api/instance/connect", requireAuth, async (req, res) => {
   try {
-    const { instanceName, number } = req.body;
-    const { data } = await api.post(`/instance/connect/${instanceName}`, { number });
+    const { instanceName, number } = req.query;
+    const { data } = await api.get(`/instance/connect/${instanceName}`, {
+      params: { number },
+    });
     res.json(data);
   } catch (err) {
+    console.error("Connect error:", err.response?.status, err.response?.data || err.message);
     const msg = err.response?.data?.response?.message || err.message;
     res.status(400).json({ success: false, error: msg });
   }
